@@ -18,22 +18,16 @@
 	- Multiple subs can be specified, separated by commas
 */
 
-load('sbbsdefs.js');
-load('hmac.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
+require('hmac.js', 'hmac_sha1');
 var options = load({}, 'modopts.js', 'github_notify');
-
-load('modopts.js');
-var settings = get_mod_options('web');
-
-load(settings.web_directory + '/lib/init.js');
+load(system.exec_dir + '../web/lib/init.js');
 
 function b2h(str) {
-	return str.split('').map(
-		function (e) {
-			var n = ascii(e).toString(16);
-			return n.length < 2 ? ('0' + n) : n;
-		}
-	).join('');
+	return str.split('').map(function (e) {
+		var n = ascii(e).toString(16);
+		return n.length < 2 ? ('0' + n) : n;
+	}).join('');
 }
 
 function verify_signature(key, payload, hash) {
@@ -57,36 +51,33 @@ try {
 }
 
 var header = {
-	from : payload.head_commit.author.username,
-	to : 'All',
-	subject : 'Changes to ' + payload.repository.full_name
+	from: payload.head_commit.author.username,
+	to: 'All',
+	subject: 'Changes to ' + payload.repository.full_name
 };
 
-var body = payload.commits.map(
-	function (e) {
-		var ret = [
-			'Commit ID: ' + e.id,
-			'Author: ' + e.author.username,
-		];
-		if (e.added.length > 0) ret.push('Added: ' + e.added.join(', '));
-		if (e.removed.length > 0) ret.push('Removed: ' + e.removed.join(', '));
-		if (e.modified.length > 0) ret.push('Modified: ' + e.modified.join(', '));
-		ret.push('', 'Message:', e.message, '', 'Commit URL:', e.url, '');
-		return ret.join('\r\n');
-	}
-);
-body.push('Repository URL: ' + payload.repository.url);
-body = body.join('\r\n\r\n');
+var body = payload.commits.map(function (e) {
+	const ret = [ 'Commit ID: ' + e.id, 'Author: ' + e.author.username ];
+	if (e.added.length) ret.push('Added: ' + e.added.join(', '));
+	if (e.removed.length) ret.push('Removed: ' + e.removed.join(', '));
+	if (e.modified.length) ret.push('Modified: ' + e.modified.join(', '));
+	ret.push('', 'Message:', e.message, '', 'Commit URL:', e.url, '');
+	return ret.join('\r\n');
+}).concat('Repository URL: ' + payload.repository.url).join('\r\n\r\n');
 
-subs.forEach(
-	function (sub) {
-		try {
-			var mb = new MsgBase(sub);
-			if (!mb.open()) throw 'Failed to open message base ' + sub;
-			if (!mb.save_msg(header, body)) throw 'Failed to save message';
-			mb.close();
-		} catch (err) {
-			log(LOG_ERR, err);
-		}
+subs.forEach(function (sub) {
+	try {
+		const mb = new MsgBase(sub);
+		if (!mb.open()) throw 'Failed to open message base ' + sub;
+		if (!mb.save_msg(header, body)) throw 'Failed to save message';
+		mb.close();
+	} catch (err) {
+		log(LOG_ERR, err);
 	}
-);
+});
+
+var _tf = new File(system.data_dir + '/github_notify');
+if (_tf.open('w')) {
+	_tf.write(body);
+	_tf.close();
+}

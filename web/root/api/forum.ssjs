@@ -3,8 +3,7 @@
     is done here; otherwise all permission checking is done at the function
     level. */
 
-load('modopts.js');
-var settings = get_mod_options('web');
+var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
@@ -218,7 +217,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                         http_request.query.sub[0],
                         http_request.query.offset[0],
                         count || settings.page_size
-                    );
+                    ).threads;
                 }
                 break;
 

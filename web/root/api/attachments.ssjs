@@ -1,7 +1,6 @@
-load('sbbsdefs.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
 
-load('modopts.js');
-var settings = get_mod_options('web');
+var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');

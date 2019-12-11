@@ -1,7 +1,4 @@
-load('sbbsdefs.js');
-load('modopts.js');
-
-if (!settings) var settings = get_mod_options('web');
+require('sbbsdefs.js', 'SYS_CLOSED');
 
 // Paths
 settings.web_directory = fullpath(
@@ -19,7 +16,7 @@ settings.web_root = fullpath(
 	)
 );
 settings.web_lib = backslash(settings.web_directory + 'lib/');
-
+settings.web_components = backslash(settings.web_directory + 'components/');
 settings.web_pages = backslash(fullpath(settings.web_root + '../pages'));
 settings.web_sidebar = backslash(fullpath(settings.web_root + '../sidebar'));
 
@@ -67,4 +64,6 @@ Object.keys(defaults).forEach(function (e) {
   }
 });
 
-load(settings.web_lib + 'locale.js');
+defaults = undefined;
+
+require(settings.web_lib + 'locale.js', 'locale');

@@ -80,20 +80,18 @@
         $('#sidebar').find('.sb-nodes-available').text(nll - niu);
     }
 
-    _sbbs_events.nodelist = _sb_nodelist;
+    registerEventListener('nodelist', _sb_nodelist);
 
     <?xjs if (settings.nodelist_ibbs) { ?>
         function _send_ibbs_telegram(sys, host, user) {
-            function send_ibbs_tg(evt) {
+            async function send_ibbs_tg(evt) {
                 if (typeof evt !== 'undefined') evt.preventDefault();
-                $.getJSON(
-                    './api/sbbsimsg.ssjs?call=send_telegram'
-                    + '&username=' + user
-                    + '&host=' + host
-                    + '&message=' + $('#telegram').val(),
-                    function (data) {
-                    }
-        		);
+                await v4_post('./api/sbbsimsg.ssjs', {
+                    call: 'send_telegram',
+                    username: user,
+                    host: host,
+                    message: $('#telegram').val()
+                });
                 $('#popUpModal').modal('hide');
         	};
             $('#popUpModalTitle').html('Send a telegram to ' + user + '@' + sys);
@@ -109,7 +107,7 @@
         	$('#popUpModal').modal('show');
         }
 
-        _sbbs_events.sbbsimsg = function (e) {
+        registerEventListener('sbbsimsg', function (e) {
             const data = JSON.parse(e.data);
             var users = 0;
             $('#sbbsimsg-nodelist').addClass('hidden');
@@ -145,7 +143,7 @@
                 $('#sbbsimsg-nodelist').removeClass('hidden');
                 $('#sbbs-nodelist').parent().removeClass('hidden');
             }
-        }
+        });
     <?xjs } ?>
 
 </script>

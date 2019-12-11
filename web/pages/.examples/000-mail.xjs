@@ -4,8 +4,8 @@
     if (user.number == 0 || user.alias == settings.guest) exit();
     load('sbbsdefs.js');
     load(settings.web_lib + 'forum.js');
-    const _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
-    const _mail = get_mail_headers(_mail_tab, true);
+    var _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
+    var _mail = get_mail_headers(_mail_tab, true);
     function _active_tab(tab) {
         return tab == _mail_tab ? 'active' : '';
     }
@@ -22,8 +22,11 @@
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
-				<strong><?xjs write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
+                <?xjs write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
+                <strong><?xjs write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
+                <?xjs if (header.from_net_type != NET_NONE) { ?>
+                    &lt;<?xjs write(_mail_tab == 'sent' ? (header.to + '@' + header.to_net_addr) : (header.from + '@' + header.from_net_addr)); ?>&gt;
+                <?xjs } ?>
 				<?xjs write(locale.strings.page_mail.label_message_date); ?>
 				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
@@ -31,7 +34,7 @@
 					<strong><?xjs write(header.subject); ?></strong>
 				</p>
 			</div>
-		</div>
+        </div>
 		<div class="message" id="message-<?xjs write(header.number); ?>" hidden></div>
 	</li>
 <?xjs } ?>
@@ -59,17 +62,14 @@
         });
     }
 
-    function deleteSelectedMail() {
-        var numbers = [];
+    async function deleteSelectedMail() {
+        const numbers = [];
         $('input.mail-select:checked').each(function () {
             numbers.push($(this).attr('id').split('-')[1]);
         });
-        $.getJSON('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='), function (data) {
-            if (!data.success) return;
-            numbers.forEach(function (e) {
-                $('#li-' + e).remove();
-            });
-        });
+        const data = await v4_get('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='));
+        if (!data.success) return;
+        numbers.forEach(e => $('#li-' + e).remove());
     }
 
 </script>

@@ -2,7 +2,7 @@
 <?xjs
 
     load("ftelnethelper.js");
-    const ftelnet_lib = load({}, settings.web_lib + 'ftelnet.js');
+    load(settings.web_lib + 'ftelnet.js');
 
     if (typeof settings.xtrn_blacklist === 'string') {
         settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
@@ -41,7 +41,7 @@
 	</div>
 </div>
 
-<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+<?xjs write('<script id="fTelnetScript" src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"></script>'); ?>
 <script type="text/javascript">
     var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
     var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
@@ -60,18 +60,17 @@
     Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
     Options.ScreenColumns = 80;
     Options.ScreenRows = 25;
-    Options.SplashScreen = Options.SplashScreen = '<?xjs write(ftelnet_lib.get_splash()); ?>';
+    Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
     Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
     var fTelnet = new fTelnetClient('fTelnetContainer', Options);
     fTelnet.OnConnectionClose = function () {
         window.location.reload();
     };
 
-    function launchXtrn(code) {
-        $.getJSON('./api/system.ssjs?call=set-xtrn-intent&code=' + code, function(data) {
-            fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
-            fTelnet.Connect();
-        });
+    async function launchXtrn(code) {
+        await v4_get('./api/system.ssjs?call=set-xtrn-intent&code=' + code);
+        fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
+        fTelnet.Connect();
     }
 
     var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
@@ -83,7 +82,10 @@
             var li = $('#xtrn-item-template').clone();
             var a = $(li).find('a')[0];
             $(a).text(xx.n);
-            $(a).click(function () { launchXtrn(xx.c); });
+            $(a).click(function (evt) {
+                evt.preventDefault();
+                launchXtrn(xx.c);
+            });
             $(ul).append(li);
             $(li).show();
         });

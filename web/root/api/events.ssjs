@@ -1,8 +1,10 @@
-load('sbbsdefs.js');
-load('modopts.js');
-var settings = get_mod_options('web');
+require('sbbsdefs.js', 'SYS_CLOSED');
+var settings = load('modopts.js', 'web');
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
+load(settings.web_lib + 'request.js');
+
+js.time_limit = 0;
 
 http_reply.header['Cache-Control'] = 'no-cache';
 http_reply.header['Content-type'] = 'text/event-stream';
@@ -51,6 +53,6 @@ while (client.socket.is_connected) {
             delete callbacks[e];
         }
     });
-    yield();
+    mswait(50);
     ping();
 }

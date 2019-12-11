@@ -2,35 +2,57 @@
 var updateInterval = 60000;
 const _sbbs_events = {};
 
-function login(evt) {
+async function v4_fetch(url, method, body) {
+	const init = { method, headers: {} };
+	if (method == 'POST' && body) {
+		init.body = body;
+		if (body instanceof URLSearchParams) {
+			init.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+		}
+	}
+	try {
+		return await fetch(url, init).then(res => res.json());
+	} catch (err) {
+		console.log('Error on fetch', url, init);
+	}
+}
+
+function v4_get(url) {
+	return v4_fetch(url);
+}
+
+// May need adjustment for multipart/form-data at some point
+function v4_post(url, data) {
+	const fd = new URLSearchParams();
+	for (let e in data) {
+		if (Array.isArray(data[e])) {
+			data[e].forEach(ee => fd.append(e, ee));
+		} else {
+			fd.append(e, data[e]);
+		}
+	}
+	return v4_fetch(url, 'POST', fd);
+}
+
+async function login(evt) {
 	if ($('#input-username').val() == '' || $('#input-password').val() == '') {
 		return;
 	}
 	if (typeof evt !== 'undefined') evt.preventDefault();
-	$.ajax({
-        url: './api/auth.ssjs',
-		method: 'POST',
-		data: {
-			username : $('#input-username').val(),
-			password : $('#input-password').val()
-		}
-	}).done(function (data) {
-		if (data.authenticated) {
-			window.location.reload(true);
-		} else {
-			$('#login-form').append('<p class="text-danger">Login failed</p>');
-		}
+	const res = await v4_post('./api/auth.ssjs', {
+		username: $('#input-username').val(),
+		password: $('#input-password').val()
 	});
+	if (res.authenticated) {
+		window.location.reload(true);
+	} else {
+		$('#login-form').append('<p class="text-danger">Login failed</p>');
+	}
 }
 
-function logout() {
-	$.ajax({
-        url: './api/auth.ssjs',
-		method: 'GET',
-		data: { logout: true }
-	}).done(function (data) {
-        if (!data.authenticated) window.location.href = '/';
-    });
+async function logout() {
+	const res = await v4_post('./api/auth.ssjs', { logout: true });
+	if (!res.authenticated) window.location.href = '/';
 }
 
 function scrollUp() {
@@ -42,8 +64,7 @@ function scrollUp() {
 function sendTelegram(alias) {
     function send_tg(evt) {
         if (typeof evt !== 'undefined') evt.preventDefault();
-        $.getJSON('./api/system.ssjs?call=send-telegram&user=' + alias + '&telegram=' + $('#telegram').val(), function(data) {
-        });
+		v4_post('./api/system.ssjs', { call: 'send-telegram', user: alias, telegram: $('#telegram').val() });
         $('#popUpModal').modal('hide');
     }
 	$('#popUpModalTitle').html('Send a telegram to ' + alias);
@@ -57,6 +78,17 @@ function sendTelegram(alias) {
 	$('#popUpModalActionButton').click(send_tg);
     $('#popUpModalActionButton').show();
 	$('#popUpModal').modal('show');
+}
+
+function registerEventListener(scope, callback, params) {
+	params = Object.keys(params || {}).reduce(function (a, c) {
+		a += '&' + c + '=' + params[c];
+		return a;
+	}, '');
+	_sbbs_events[scope] = {
+		qs: 'subscribe=' + scope + params,
+		callback: callback
+	};
 }
 
 window.onload =	function () {
@@ -79,14 +111,14 @@ window.onload =	function () {
 
 	if ($('#button-logout').length > 0) {
 
-        _sbbs_events.mail = function (e) {
+		registerEventListener('mail', function (e) {
             const data = JSON.parse(e.data);
             if (typeof data.count != 'number') return;
             $('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
             $('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
-        }
-
-        _sbbs_events.telegram = function (e) {
+		});
+		
+		registerEventListener('telegram', function (e) {
             const tg = JSON.parse(e.data).replace(/\1./g, '').replace(
                 /\r?\n/g, '<br>'
             );
@@ -94,16 +126,17 @@ window.onload =	function () {
             $('#popUpModalBody').append(tg);
             $('#popUpModalActionButton').hide();
             $('#popUpModal').modal('show');
-        }
+		});
 
 	}
 
-    const _evtqs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
-        return a + (i == 0 ? '?' : '&') + 'subscribe=' + c; }, ''
-    );
-    const _es = new EventSource('/api/events.ssjs' + _evtqs);
+	const qs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
+		return a + (i == 0 ? '?' : '&') + _sbbs_events[c].qs;
+	}, '');
+
+    const es = new EventSource('/api/events.ssjs' + qs);
     Object.keys(_sbbs_events).forEach(function (e) {
-        _es.addEventListener(e, _sbbs_events[e]);
+        es.addEventListener(e, _sbbs_events[e].callback);
     });
 
 }

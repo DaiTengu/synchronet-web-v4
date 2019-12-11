@@ -1,7 +1,6 @@
-load('sbbsdefs.js');
-load('nodedefs.js');
-load('modopts.js');
-var settings = get_mod_options('web');
+require('sbbsdefs.js', 'SYS_CLOSED');
+require('nodedefs.js', 'NODE_WFC');
+var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
@@ -16,18 +15,18 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 	switch (http_request.query.call[0]) {
 
 		case 'node-list':
-            var usr = new User(1);
+			var usr = new User(1);
 			reply = system.node_list.reduce(function (a, c, i) {
-                if (c.status !== 3) return a;
-                usr.number = c.useron;
+				if (c.status !== 3) return a;
+				usr.number = c.useron;
 				a.push({
-                    node: i,
-                    status: format(NodeStatus[c.status], c.aux, c.extaux),
+					node: i,
+					status: format(NodeStatus[c.status], c.aux, c.extaux),
 					action: format(NodeAction[c.action], c.aux, c.extaux),
-                    user: usr.alias,
-                    connection: usr.connection
+					user: usr.alias,
+					connection: usr.connection
 				});
-                return a;
+				return a;
 			}, []);
 			for (var un = 1; un < system.lastuser; un++) {
 				usr.number = un;
@@ -38,13 +37,13 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				var webAction = getSessionValue(usr.number, 'action');
 				if (webAction === null) continue;
 				reply.push({
-                    status: '',
+					status: '',
 					action: locale.strings.api_system.nodelist_action_prefix + ' ' + webAction,
 					user: usr.alias,
-                    connection: 'W'
+					connection: 'W'
 				});
 			}
-            usr = undefined;
+			usr = undefined;
 			break;
 
 		case 'send-telegram':
@@ -66,7 +65,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				un, format(
 					locale.strings.api_system.telegram_header_format,
 					user.alias, (new Date()).toLocaleString()
-				) + '\r\n' + http_request.query.telegram[0] + '\r\n'
+				) + '\r\n' + utf8_decode(http_request.query.telegram[0]) + '\r\n'
 			);
 			break;
 

@@ -143,11 +143,11 @@ if (!modopts_web) {
     	guest : 'Guest',
     	timeout : 43200,
     	inactivity : 900,
-    	user_registration : true,
+    	user_registration : false,
     	minimum_password_length : 6,
     	maximum_telegram_length : 800,
     	web_directory : install_dir,
-      ftelnet : true,
+        ftelnet : true,
     	ftelnet_splash : '../text/synch.ans',
     	keyboard_navigation : false,
     	vote_functions : true,
@@ -197,10 +197,12 @@ if (typeof named_parameters.defaults == 'undefined' && deny('Proceed with instal
 }
 write('\r\n\r\n---\r\n\r\n');
 
-writeln('Downloading ' + zip_url);
-if (!download(zip_url, download_target)) {
-    writeln('Download of ' + zip_url + ' failed. Exiting.');
-    exit();
+if (!file_exists(download_target) || confirm(download_target + ' present.  Overwrite')) {
+    writeln('Downloading ' + zip_url);
+    if (!download(zip_url, download_target)) {
+        writeln('Download of ' + zip_url + ' failed. Exiting.');
+        exit();
+    }
 }
 
 writeln('Extracting ' + download_target);
@@ -214,9 +216,11 @@ copy_dir_contents(temp_dir + '/mods', system.mods_dir, true);
 copy_dir_contents(temp_dir + '/text', system.text_dir, true);
 copy_dir_contents(temp_dir + '/web', install_dir, true);
 copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages', false);
-copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages/.examples', true);
+copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages/.examples', true); // These ... probably aren't necessary
 copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar', false);
-copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar/.examples', true);
+copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar/.examples', true); // These ... probably aren't necessary
+copy_dir_contents(temp_dir + '/web/components/.examples', install_dir + '/components', false);
+copy_dir_contents(temp_dir + '/web/components/.examples', install_dir + '/components/.examples', true); // These ... probably aren't necessary
 
 writeln('Cleaning up ...');
 remove_dir(temp_dir + '/web/pages/.examples');

@@ -77,8 +77,12 @@ pre.list {
 }
 
 .list-group-item.sidebar {
-	overflow : hidden;
-	word-wrap : break-word;
+	overflow: hidden;
+	word-wrap: break-word;
+}
+
+.list-group-item.sidebar:empty {
+	display: none;
 }
 
 .icon {
@@ -156,9 +160,18 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 .dropdown-submenu {
     position: relative;
 }
-
-.dropdown-submenu .dropdown-menu {
+.dropdown-submenu > .dropdown-menu {
     top: 0;
     left: 100%;
-    margin-top: -1px;
+    margin-top: -6px;
+} 
+
+.breadcrumb {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.breadcrumb li {
+	display: inline;
 }

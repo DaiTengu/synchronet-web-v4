@@ -1,5 +1,3 @@
-load("sbbsdefs.js");
-load("nodedefs.js");
 const sbbsimsg = load({}, "sbbsimsg_lib.js");
 
 var last_run = 0;
@@ -23,7 +21,7 @@ function list() {
 function cycle() {
     if (time() - last_run <= frequency) return;
     last_run = time();
-    list();
+    // list();
 }
 
 this;
