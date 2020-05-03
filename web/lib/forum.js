@@ -312,6 +312,10 @@ function getMailHeaders(sent, ascending) {
     return headers;
 }
 
+function is_spam(header) {
+    return (header.attr&MSG_SPAM || (header.subject.search(/^SPAM:/) > -1));
+}
+
 function get_mail_headers(filter, ascending) {
     const ret = {
         headers: [],
@@ -330,7 +334,7 @@ function get_mail_headers(filter, ascending) {
             if (filter == 'sent') ret.headers.push(h);
         }
 	if (h.to_ext == user.number) {
-            if ((h.attr&MSG_SPAM) || (h.subject.search(/^SPAM:/) > -1)) {
+            if (is_spam(h)) {
                 h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
                 if (filter == 'spam') ret.headers.push(h);
             } else {
@@ -583,7 +587,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     var header = {
         attr : MSG_POLL,
         subject : subject.substr(0, LEN_TITLE),
-        from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
+        from : msg_area.sub[sub].settings&SUB_AONLY ? "Anonymous" : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
         from_ext : user.number,
         to : 'All',
         field_list : [],
@@ -948,7 +952,7 @@ function getMessageThreads(sub, max) {
             attr : header.attr,
             auxattr : header.auxattr,
             number : header.number,
-            from : header.is_utf8 ? header.from : utf8_encode(header.from),
+            from : (header.attr&MSG_ANONYMOUS) ? "Anonymous" : (header.is_utf8 ? header.from : utf8_encode(header.from)),
             from_ext : header.from_ext,
             from_net_addr : header.from_net_addr,
             to : header.is_utf8 ? header.to : utf8_encode(header.to),
@@ -998,6 +1002,7 @@ function getMessageThreads(sub, max) {
         for (var m = start; m <= msgBase.last_msg; m++) {
             var header = msgBase.get_msg_header(m);
             if (header === null || header.attr&MSG_DELETE) continue;
+            if (settings.forum_no_spam && is_spam(header)) continue;
             headers[header.number] = header;
             c++;
             if (c >= count) break;
@@ -1020,6 +1025,11 @@ function getMessageThreads(sub, max) {
         function(h) {
 
             if (headers[h] === null || headers[h].attr&MSG_DELETE) {
+                delete headers[h];
+                return;
+            }
+
+            if (settings.forum_no_spam && is_spam(header)) {
                 delete headers[h];
                 return;
             }

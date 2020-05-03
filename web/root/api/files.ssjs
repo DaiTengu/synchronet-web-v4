@@ -1,3 +1,4 @@
+load('sbbsdefs.js');
 var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
@@ -18,7 +19,8 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				file_area.dir[http_request.query.dir[0]].can_download &&
 				typeof http_request.query.file !== 'undefined'
 			) {
-				var fileBase = new FileBase(file_area.dir[http_request.query.dir[0]].code);
+				var dircode = file_area.dir[http_request.query.dir[0]].code;
+				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
 					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
@@ -28,7 +30,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 						return true;
 					}
 				});
-				if (file === null) break;
+				if (file === null) {
+					reply.error = 'File not found';
+					break;
+				}
+				if (!file_area.dir[dircode].is_exempt && file.credits > (user.security.credits + user.security.free_credits)) {
+					reply.error = 'Not enough credits to download this file';
+					break;
+				}
 				http_reply.header['Content-Type'] = 'application/octet-stream';
 				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
 				http_reply.header['Content-Encoding'] = 'binary';
@@ -42,6 +51,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				}
 				f.close();
 				reply = false;
+				user.downloaded_file(dircode, file.path);
 			}
 			break;
 		default:
